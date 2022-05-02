@@ -1,0 +1,92 @@
+---
+title: "Final Project"
+author: "Xin Gao"
+date: "05/01/2022"
+output: html_notebook
+---
+
+# Packages and Data
+
+```{r warning=FALSE,message=FALSE}
+library(tidyverse)
+library(lubridate)
+Movies <- read.csv("movies.csv")
+Ratings <- read.csv("ratings.csv")
+Tags <- read.csv("tags.csv")
+```
+
+
+# Data Wrangling (Initial)
+
+(1)
+
+```{r}
+Ratings <- Ratings %>%
+  mutate(rating_date = as_datetime(timestamp))
+head(Ratings, n = 3)
+Tags <- Tags %>%
+  mutate(tag_date = as_datetime(timestamp))
+head(Tags, n = 3)
+```
+
+
+(2)
+
+```{r}
+Movies_rating <- Ratings %>%
+  inner_join(Tags, by = c("movieId" = "movieId", "userId" = "userId")) %>%
+  inner_join(Movies, by = c("movieId" = "movieId")) %>%
+  select(userId, rating, rating_date, tag, tag_date, title, genres)
+head(Movies_rating)
+```
+
+
+(3)
+
+```{r}
+Movies_year <- Movies_rating  %>%
+  mutate(release_year = as.numeric(str_sub(title, - 5, -2)))
+head(Movies_year, n = 3)
+```
+
+# Data Visualization
+
+(1)
+
+```{r}
+data.frame(genres = unlist(str_split(Movies$genres, "[|]"))) %>%
+  group_by(genres) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 10) %>%
+  mutate(genres = factor(genres, levels = genres)) %>%
+  ggplot(aes(genres, count, fill = genres)) + 
+  geom_bar(stat = "identity") + 
+  theme_bw()
+```
+
+The top 10 rated movie genres are Drama,Comedy,Thriller,Action,Romance,Adventure,Crime,
+Sci-Fi,Horror and Fantasy
+
+(2)
+
+What are the top ten movies rated by more than 50 people?
+```{r fig.height=8}
+Ratings %>%
+  inner_join(Movies, by = c("movieId" = "movieId")) %>%
+  group_by(title) %>%
+  summarise(count = n(), mean_rating = mean(rating)) %>%
+  filter(count > 50) %>%
+  arrange(desc(mean_rating)) %>%
+  head(n = 10) %>%
+  mutate(title = factor(title, levels = title)) %>%
+  ggplot(aes(title, mean_rating, fill = title)) + 
+  geom_bar(stat = "identity") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  guides(fill = FALSE)
+```
+
+The top ten movies rated by more than 50 people are are shown above.
+
+
